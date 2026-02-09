@@ -1,0 +1,16 @@
+{
+  "name": "athlee",
+  "version": "1.0.0",
+  "description": "This document contains **all canonical prompts, rules, and templates** required to build Athlehub using AI in a controlled, testable, UI‑first, infra‑last manner.",
+  "main": "index.js",
+  "private" : true,
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
