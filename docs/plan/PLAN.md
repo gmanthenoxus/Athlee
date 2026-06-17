@@ -286,196 +286,431 @@ Required for switching between Organizer and Player mode in-app (affects navigat
     - BusinessOwner-Specific Considerations
 
 
-## Match Creation
+## Match Setup System (Sport-Driven, Multi-Path)
 
-1. CLASS DIAGRAM
-    +-------------------+
-    |      Match        |
-    +-------------------+
-    | id: string        |
-    | sport: SportType  |
-    | type: MatchType   |
-    | mode: MatchMode   |
-    | date: Date        |
-    | locationId: string|
-    | createdBy: User   |
-    | teams: Team[]     |
-    | players: Player[] |
-    | rules: MatchRuleSet|
-    | stats: MatchStats |
-    | status: MatchStatus|
-    +-------------------+
+### Feature Goal
+Implement a comprehensive, sport-aware Match Setup system that allows users to create matches through multiple entry points (Matches page, Location page, Events) and guides them through a step-by-step wizard. The system is designed to be extensible for future sports, with Basketball as the initial fully implemented sport.
 
-    +-----------------------+
-    |   MatchSetupSession   |
-    +-----------------------+
-    | currentStep: number   |
-    | selectedSport         |
-    | matchType             |
-    | matchMode             |
-    | location              |
-    | teams: Team[]         |
-    | rules: MatchRuleSet   |
-    | players: Player[]     |
-    +-----------------------+
+The wizard consists of the following steps, dynamically adapted based on the selected sport:
+1. **Sport Selection** – foundation of the match; filters subsequent options.
+2. **Match Type, Mode, Team Size & Stats** – defines match structure (single, best-of, tournament, rotational), casual/competitive mode, team size (e.g., 5v5, 3v3, singles/doubles), and stat tracking intensity (Basic/Advanced).
+3. **Location** – search and select from available locations (filtered by sport).
+4. **Teams** – create teams, add players (with search/suggestions), assign roles (captain, positions, substitutes), and manage team names.
+5. **Rules** – choose from sport-specific rule presets (e.g., FIBA, NBA) and edit individual rules (timing, scoring, fouls, violations, gameplay structure). Also support "unwritten rules" as optional notes.
+6. **Officials** – for competitive matches, assign referees and record keepers (future multi-user recording).
+7. **Finalization** – review match details, set schedule (now or later), configure privacy (public, private, invite-only), and proceed to live match or save to matches list.
 
-2. CONTEXT FLOW
-    [New Match Screen]
-        ↓
-    [MatchSetupSession]
-        ↓        ↘
-    [TeamBuilder] [LocationService] → Location DB
-        ↓
-    [RuleEngine] → SportSettings
-        ↓
-    [MatchCreator] → Match DB
+All data is mocked and persisted locally, with clear integration paths to existing Auth, Profile, Location, and future Stat Tracking, Badge, and Leaderboard systems.
 
-3. SEQUENCE DIAGRAM
-    User → NewMatchScreen → MatchSetupSession.create()
-    User → selectSport(), selectMode(), selectType()
-    User → selectLocation() → LocationService → Location DB
-    User → enterTeams(), addPlayers()
-    User → applyRules() → RuleEngine → MatchRuleSet
-    User → startMatch() or logMatch() → MatchCreator
-    → Match Saved → Update Profile Stats, XP, etc.
+### In Scope
+- **Multiple Creation Entry Points**:
+  - From Matches tab: "Create Match" button starts wizard with no pre-filled data.
+  - From Location Detail page: "Create Match at this location" pre-fills location and sport (if location has primary sport).
+  - From Event page: "Join/Start Match" pre-fills event details (future).
+  
+- **Sport-Driven Wizard**:
+  - Step 1: Sport picker (from SportType enum). User's primary sport from profile is pre-selected.
+  - Step 2: Match configuration:
+    - Match Type: Single, Set-based (Best of...), Tournament, Rotational (only relevant types shown per sport).
+    - Mode: Casual (anyone, including visitors) or Competitive (requires logged-in user).
+    - Team Size: Options defined per sport (e.g., Basketball: 5v5, 3v3; Tennis: Singles, Doubles). May include substitutes count.
+    - Stat Intensity: Basic, Advanced, Professional (future), Custom (future). Determines which stat keys are tracked.
+  - Step 3: Location picker: search locations filtered by selected sport. Shows basic court info (name, address, distance, amenities summary).
+  - Step 4: Team composition:
+    - Default two teams: "Team A" and "Team B" (editable names).
+    - For each team, add players up to the selected team size (plus substitutes if applicable).
+    - Player search: auto-suggest based on friends, friends-of-friends, location regulars (from Location system), nearby players (by profile location), and primary sport.
+    - Manual entry for new players (temporary, with future claim flow).
+    - For competitive mode: require jersey numbers.
+    - Optional: assign player positions (based on sport) and designate captain.
+  - Step 5: Rules configuration:
+    - Choose from predefined rule sets per sport (e.g., Basketball: FIBA, NBA, NCAA, Streetball). Default preselected.
+    - View and edit individual rules: Timing (game duration, shot clock), Scoring (points per basket, win conditions), Fouls (limits, penalties), Violations, Gameplay structure.
+    - Option to save custom rule set for future reuse.
+    - "Unwritten rules" text field for local court customs (displayed as info).
+  - Step 6: Officials (competitive only):
+    - Add referees (by username) and record keepers (future: split recording roles).
+    - Placeholder for multi-user stat recording.
+  - Step 7: Finalization:
+    - Review match summary (sport, type, mode, location, teams, rules, officials).
+    - Schedule: "Play now" (immediate, status = InProgress) or "Schedule for later" (select date/time, status = Scheduled).
+    - Privacy setting: Public (visible to all), Private (only participants), Invite-only (link sharing).
+    - "Create Match" button saves and navigates to appropriate screen (Live Match placeholder or Matches list).
 
+- **Match Storage**:
+  - Match object with all details (sport, type, mode, location, teams, rules, officials, schedule, privacy, status).
+  - Status: Draft, Scheduled, InProgress, Completed, Cancelled.
 
-4. SCREEN CONFIGURATION
-    - NewMatchScreen.tsx
-    | Step | Component                             | Notes                                 |
-    | ---- | ------------------------------------- | ------------------------------------- |
-    | 1    | `SelectSportCard`                     | Icons or sport list                   |
-    | 2    | `MatchModePicker` + `MatchTypePicker` | (Single, Set, Tournament, Rotational) |
-    | 3    | `LocationSearch` + Date               | Suggest known courts                  |
-    | 4    | `TeamEntry` + `PlayerEntry`           | With auto-suggest, regulars           |
-    | 5    | `RulesConfigurator`                   | From sport settings                   |
-    | 6    | `MatchSummary` + Confirm              | Validate everything                   |
+- **Integration**:
+  - Use existing LocationService for location search and regulars.
+  - Use existing ProfileService for player suggestions.
+  - Use existing Auth for user identity and account type restrictions.
 
-5. RELATIONSHIP WITH OTHER FEATURES
-    | Related Feature    | Interaction                           |
-    | ------------------ | ------------------------------------- |
-    | Stat Tracking      | Affects what fields show during match |
-    | Rule Engine        | Pulls `MatchRuleSet` per sport        |
-    | Profile System     | Updates XP, matches played            |
-    | Location System    | Recommends regulars, logs appearances |
-    | Leaderboard Engine | Triggered post-match                  |
-    | Badge Engine       | Evaluates performance-based triggers  |
+- **Mock Data**:
+  - Predefined sport configurations (starting with Basketball).
+  - Sample rule presets.
+  - Mock players for suggestions.
 
-6. CLASSES
-    - MATCHES
-    class Match {
-        id: string;
-        sport: SportType;
-        type: MatchType; // Single, Set, Tournament, Rotational
-        mode: MatchMode; // Casual, Competitive
-        date: Date;
-        locationId: string;
-        createdBy: string; // userId
-        teams: Team[];
-        players: Player[]; // flattened player list
-        rules: MatchRuleSet;
-        stats: MatchStats;
-        status: MatchStatus; // Scheduled, InProgress, Completed
-    }
+### Out of Scope (Now)
+- Live match screen (real-time scoring) – will be separate feature.
+- Actual stat recording – handled by Stat Engine (future).
+- Tournament bracket management.
+- Multi-user recording roles (officials placeholder only).
+- Payment or booking integration for paid courts.
+- Real-time updates or notifications.
+- Full customization of rule sets (editing limited to presets for now).
+- "Unwritten rules" storage per location (future).
 
-    - MATCH SETUP SESSION
-    Temporary in-memory/session-based representation of an ongoing setup
-    class MatchSetupSession {
-        sessionId: string;
-        userId: string;
-        currentStep: number;
+### User Flows
 
-        selectedSport: SportType;
-        matchType: MatchType;
-        matchMode: MatchMode;
+**Flow 1: Create Match from Matches Tab**
+1. User taps "Create Match" on Matches screen.
+2. Step 1: Sport selection (primary sport pre-selected, but user can change).
+3. Step 2: Configure match type, mode, team size, stat intensity.
+4. Step 3: Search and select location (filtered by sport).
+5. Step 4: Build teams: add players to Team A and Team B using search/suggestions.
+6. Step 5: Choose rule preset and optionally edit rules.
+7. Step 6: (If competitive) Add officials (optional).
+8. Step 7: Review, set schedule and privacy, tap "Create Match".
+9. Match saved; if "Play now", goes to live match placeholder; if scheduled, returns to matches list.
 
-        location: Location;
-        date: Date;
+**Flow 2: Create Match from Location Page**
+1. User on Location Detail page taps "Create Match at this court".
+2. Wizard opens with location pre-filled and sport set to location's primary sport (if multiple, user may need to select).
+3. Proceed through remaining steps; location step skipped or shown as read-only.
 
-        teams: Team[];
-        players: Player[];
-        rules: MatchRuleSet;
+**Flow 3: Create Match from Event (Future)**
+- Event page has "Start Match" button that pre-fills event details (teams, date).
 
-        isLive: boolean; // true = live match, false = logging a past match
-        autoSaved: boolean;
-    }
+**Flow 4: Continue Draft Match**
+- If user exits wizard mid-way, draft is saved automatically. Next time they start match creation, they can resume.
 
-    - TEAM
-    class Team {
-        id: string;
-        name: string;
-        players: Player[];
-        jerseyColor?: string;
-    }
+**Flow 5: Edit Scheduled Match**
+- From matches list, user can edit details (if not started) or cancel.
 
-    - PLAYER SELECTOR
-    interface PlayerSelectorOptions {
-        sport?: SportType;
-        locationId?: string;
-        competitiveMode?: boolean;
-        teamSize?: number;
-    }
+### UI Components
 
-    - MATCH STATUS
-    enum MatchStatus {
-        Draft = "Draft",
-        InProgress = "InProgress",
-        Completed = "Completed",
-        Cancelled = "Cancelled"
-    }
+**Shared Components**
+- `StepWizard` – progress indicator, next/back buttons, step content area.
+- `SportPicker` – grid of sport icons with labels, single-select.
+- `MatchTypePicker` – cards for each type with icon and description.
+- `ModeToggle` – Casual/Competitive switch.
+- `TeamSizePicker` – dropdown or segmented control with options per sport (e.g., "5v5", "3v3", "Singles", "Doubles").
+- `StatIntensityPicker` – tabs or radio buttons (Basic, Advanced, etc.).
+- `LocationPicker` – search input with dropdown results showing location cards (name, distance, sport icons).
+- `TeamBuilder` – two-column layout (Team A, Team B) with team name input, player chips, and "Add Player" button.
+- `PlayerSearchModal` – search input, suggestions list (avatar, name, mutual friends tag).
+- `PlayerChip` – displays player name, jersey number (if competitive), remove icon, role badge.
+- `RoleSelector` – dropdown for player position (based on sport) and captain toggle.
+- `RulePresetPicker` – dropdown of presets (e.g., FIBA, NBA).
+- `RuleEditor` – expandable sections for each rule category with editable fields.
+- `UnwrittenRulesInput` – text area for local customs.
+- `OfficialsInput` – search fields for referee and record keeper (usernames).
+- `SchedulePicker` – "Play now" vs "Schedule" toggle, date/time picker when scheduled.
+- `PrivacyPicker` – radio buttons for Public, Private, Invite-only.
 
+### Type Definitions
 
-7. LOGIC & ENGINE FLOW
-    - MATCH CREATION LOGIC
-    function createMatch(session: MatchSetupSession): Match {
-        if (!validateMatchSetup(session)) throw new Error("Incomplete setup");
+```typescript
+enum MatchStatus {
+  Draft = "Draft",
+  Scheduled = "Scheduled",
+  InProgress = "InProgress",
+  Completed = "Completed",
+  Cancelled = "Cancelled"
+}
 
-        const match = new Match({
-            ...session,
-            id: generateUUID(),
-            status: session.isLive ? "InProgress" : "Completed",
-        });
+enum MatchType {
+  Single = "Single",
+  SetBased = "SetBased",
+  Tournament = "Tournament",
+  Rotational = "Rotational"
+}
 
-        MatchDB.save(match);
-        StatEngine.initialize(match);
-        return match;
-    }
+enum MatchMode {
+  Casual = "Casual",
+  Competitive = "Competitive"
+}
 
-    - MATCH VALIDATION
-    function validateMatchSetup(session: MatchSetupSession): boolean {
-        if (!session.selectedSport || !session.matchType || !session.teams.length) return false;
-        if (session.matchMode === "Competitive") {
-            for (let player of session.players) {
-                if (!player.jerseyNo) return false;
-            }
-        }
-        return true;
-    }
+enum StatIntensity {
+  Basic = "Basic",
+  Advanced = "Advanced",
+  Professional = "Professional",
+  Custom = "Custom"
+}
 
-    - SUGGESTED PLAYER
-    function getSuggestedPlayers(locationId: string, sport: SportType): Player[] {
-        return PlayerHistoryDB.filter(p =>
-            p.locationId === locationId && p.sport === sport && p.matchCount >= 2
-        );
-    }
-    - Auto-Saved Match Draft System
-    Let users resume unfinished matches from where they left off.
-    class DraftRecoveryService {
-        static saveDraft(session: MatchSetupSession): void {
-            DraftDB.save({ userId: session.userId, data: session });
-        }
+interface Match {
+  id: string;
+  sport: SportType;
+  type: MatchType;
+  mode: MatchMode;
+  teamSize: TeamSizeConfig;
+  statIntensity: StatIntensity;
+  locationId?: string;
+  scheduledTime?: Date;
+  createdBy: string;
+  teams: Team[];
+  rules: MatchRules;
+  officials?: Officials;
+  privacy: "public" | "private" | "invite";
+  status: MatchStatus;
+  createdAt: Date;
+}
 
-        static loadDraft(userId: string): MatchSetupSession | null {
-            return DraftDB.findByUser(userId);
-        }
+interface Team {
+  id: string;
+  name: string;
+  players: MatchPlayer[];
+}
 
-        static clearDraft(userId: string): void {
-            DraftDB.removeByUser(userId);
-        }
-    }
+interface MatchPlayer {
+  id: string;
+  name: string;
+  userId?: string;
+  jerseyNo?: string;
+  position?: string;
+  isCaptain?: boolean;
+}
 
+interface MatchRules {
+  presetName: string;
+  timing: { gameDuration?: number; shotClock?: number; periods?: number };
+  scoring: { pointsPerBasket: number; winByTwo: boolean };
+  fouls: { personalFoulLimit?: number; teamFoulLimit?: number };
+  unwrittenRules?: string;
+}
 
-   
+interface Officials {
+  referees: string[];
+  recordKeepers: string[];
+}
+
+interface SportConfig {
+  sport: SportType;
+  matchTypes: MatchType[];
+  teamSizeOptions: TeamSizeOption[];
+  statIntensities: StatIntensity[];
+  rulePresets: RulePreset[];
+  positions?: string[];
+}
+
+interface TeamSizeOption {
+  label: string;
+  playersPerTeam: number;
+  substitutes: number;
+}
+
+interface RulePreset {
+  name: string;
+  description: string;
+  rules: MatchRules;
+}
+
+interface MatchSetupSession {
+  userId: string;
+  step: number;
+  sport?: SportType;
+  matchType?: MatchType;
+  mode?: MatchMode;
+  teamSize?: TeamSizeOption;
+  statIntensity?: StatIntensity;
+  locationId?: string;
+  teams: Team[];
+  rules?: MatchRules;
+  officials?: Officials;
+  schedule?: Date | null;
+  privacy?: "public" | "private" | "invite";
+  isDraft: boolean;
+  lastUpdated: Date;
+}
+```
+
+### Services
+
+- **MatchSetupService**: createMatch, updateMatch, getMatch, getMatches, deleteMatch, finalizeMatch, saveDraft, loadDraft
+- **SportConfigService**: getConfig(sport), getAllSports()
+- **PlayerSuggestionService**: suggestPlayers(query, context)
+- **RuleService**: getPresets(sport), getPreset(sport, presetName), validateRules(rules)
+
+### State Management
+- **Zustand** store for current match setup session (MatchSetupSession) with auto-save to localStorage.
+- Persist wizard state on every change, allowing users to resume draft matches.
+
+### Database Schema
+- Matches stored in `localStorage` under `athlee_matches`
+- Drafts stored under `athlee_match_drafts_${userId}`
+
+### Testing Requirements
+- SportConfig returns correct options for Basketball.
+- Player suggestions combine friends, regulars, location data.
+- Match creation with valid data saves correctly.
+- Draft auto-save and resume works.
+- Validation: required fields, competitive mode requires jersey numbers.
+- All entry points lead to wizard with correct pre-fills.
+- Step navigation works; back/next maintains state.
+- Sport change updates subsequent steps.
+- Created match appears in matches list.
+
+---
+
+## Basketball-Specific Match Setup Configuration
+
+### 1. Sport Configuration
+
+**Supported Match Types**
+- Single: One-off game with final score.
+- Set-based: Best-of-N sets (best of 3, best of 5) – used in some streetball tournaments.
+- Tournament (placeholder): Future expansion.
+- Rotational (placeholder): Future expansion (e.g., 21, knockout).
+
+**Team Size Options**
+
+| Label | Players per Team | Substitutes (max) | Description |
+|-------|------------------|-------------------|-------------|
+| 5v5   | 5                | 7                 | Full-court traditional |
+| 3v3   | 3                | 2                 | Half-court / FIBA 3x3 |
+| 2v2   | 2                | 1                 | Small-sided |
+| 1v1   | 1                | 0                 | One-on-one |
+
+**Stat Intensity Levels**
+- Basic: Points only (or simplified scoring).
+- Advanced: Points, Rebounds, Assists, Steals, Blocks, Turnovers, Fouls.
+- Professional: All advanced stats + shooting splits (FG%, 3P%, FT%), plus advanced metrics (future).
+- Custom: User-defined (future).
+
+MVP will implement Basic and Advanced only.
+
+**Player Positions**
+- Point Guard (PG)
+- Shooting Guard (SG)
+- Small Forward (SF)
+- Power Forward (PF)
+- Center (C)
+- Optional: "Any" for casual games.
+
+Positions are only relevant for competitive matches or if users want to assign roles. They are not enforced by rules.
+
+### 2. Rule Presets
+
+#### FIBA (International)
+| Category | Rule | Value |
+|----------|------|-------|
+| Timing | Game Duration | 4 x 10 minutes (quarters) |
+| | Shot Clock | 24 seconds |
+| | Overtime | 5 minutes |
+| Scoring | Points per Field Goal (inside arc) | 2 |
+| | Points per Three-Pointer | 3 |
+| | Free Throw | 1 |
+| | Win by | Any margin (no win-by-2) |
+| Fouls | Personal Foul Limit | 5 |
+| | Team Foul Limit per quarter | 4 (then 2 FTs) |
+| | Bonus after | 5th team foul |
+| Violations | Backcourt violation | 8 seconds |
+| | Goaltending | Yes |
+| Gameplay | Timeouts | 2 in first half, 3 in second half, 1 per overtime |
+
+#### NBA
+| Category | Rule | Value |
+|----------|------|-------|
+| Timing | Game Duration | 4 x 12 minutes (quarters) |
+| | Shot Clock | 24 seconds |
+| | Overtime | 5 minutes |
+| Scoring | Points per Field Goal (inside arc) | 2 |
+| | Points per Three-Pointer | 3 |
+| | Free Throw | 1 |
+| | Win by | Any margin |
+| Fouls | Personal Foul Limit | 6 |
+| | Team Foul Limit per quarter | 4 (then 2 FTs) |
+| | Bonus after | 5th team foul |
+| Violations | Backcourt violation | 8 seconds |
+| | Goaltending | Yes |
+| Gameplay | Timeouts | 6 total (no carryover), 2 per overtime |
+
+#### NCAA (Men's)
+| Category | Rule | Value |
+|----------|------|-------|
+| Timing | Game Duration | 2 x 20 minutes (halves) |
+| | Shot Clock | 30 seconds |
+| | Overtime | 5 minutes |
+| Scoring | Points per Field Goal | 2 |
+| | Points per Three-Pointer | 3 |
+| | Free Throw | 1 |
+| | Win by | Any margin |
+| Fouls | Personal Foul Limit | 5 |
+| | Team Foul Limit per half | 7 (then 1-and-1), 10 (then 2 FTs) |
+| Violations | Backcourt violation | 10 seconds |
+| | Goaltending | Yes |
+| Gameplay | Timeouts | 4 full, 2 30-sec (regulation) |
+
+#### Streetball (Pickup)
+| Category | Rule | Value |
+|----------|------|-------|
+| Timing | Game Duration | First to 21 (or 15) |
+| | Shot Clock | None |
+| | Overtime | Win by 2, cap at 23 |
+| Scoring | Points per Field Goal (inside arc) | 1 |
+| | Points per Three-Pointer | 2 |
+| | Free Throw | 1 (rare) |
+| | Win by | 2 points (or cap) |
+| Fouls | Personal Foul Limit | None (call your own) |
+| | Team Foul Limit | None |
+| Violations | Backcourt violation | None (half-court) |
+| | Goaltending | Honor system |
+| Gameplay | Timeouts | None |
+
+### 3. Basketball Configuration Service
+
+The `SportConfigService` will return:
+
+```typescript
+const basketballConfig: SportConfig = {
+  sport: SportType.Basketball,
+  matchTypes: [MatchType.Single, MatchType.SetBased],
+  teamSizeOptions: [
+    { label: "5v5", playersPerTeam: 5, substitutes: 7 },
+    { label: "3v3", playersPerTeam: 3, substitutes: 2 },
+    { label: "2v2", playersPerTeam: 2, substitutes: 1 },
+    { label: "1v1", playersPerTeam: 1, substitutes: 0 },
+  ],
+  statIntensities: [StatIntensity.Basic, StatIntensity.Advanced],
+  rulePresets: [
+    { name: "FIBA", description: "International basketball rules" },
+    { name: "NBA", description: "National Basketball Association" },
+    { name: "NCAA", description: "College basketball (men's)" },
+    { name: "Streetball", description: "Pickup game rules" },
+  ],
+  positions: ["PG", "SG", "SF", "PF", "C"],
+};
+```
+
+### 4. Basketball Validations
+
+- Team size: Number of players on each team must not exceed `playersPerTeam + substitutes`. At least one player per team required.
+- Competitive mode: All players must have jersey numbers.
+- Location: Must support basketball (sport array includes Basketball).
+- Rule consistency: If a preset is chosen, rules object should match preset structure; custom edits allowed but should not break stat engine.
+
+### 5. Player Suggestions for Basketball
+
+The `PlayerSuggestionService` prioritizes players who:
+- Are friends of the current user.
+- Have played at the selected location before (location regulars).
+- Have basketball as their primary sport (from profile).
+- Are geographically near the selected location (based on profile city).
+
+### 6. Mock Data for Basketball
+
+Pre-populate the system with:
+- **Locations**: At least 5 basketball courts (business, community) with amenities and regular players.
+- **Players**: 20+ mock users with basketball as primary sport.
+- **Matches**: 5-10 past matches with different team sizes and stat intensities.
+- **Rule Presets**: As defined above.
+
+### 7. Future Extensibility
+
+When adding a new sport (e.g., Football), create a similar configuration module. The wizard will dynamically adapt based on the selected sport's config. All sport-specific logic is encapsulated in `SportConfigService` and `RuleService`, keeping the core wizard agnostic.
+
+---
 
 ## Team and Player Management
 

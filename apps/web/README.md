@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Athlee Web Application
+
+Modern web application for Athlee - a social platform for connecting athletes and sports enthusiasts.
+
+## Project Structure
+
+```
+src/
+├── app/              # Next.js App Router pages and layouts
+├── components/       # Reusable React components
+├── contexts/         # React Context providers
+├── hooks/            # Custom React hooks
+└── lib/              # Utility functions and services
+```
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+
+### Installation
+
+```bash
+npm install
+```
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## Features
 
-To learn more about Next.js, take a look at the following resources:
+- **Authentication**: Login, Registration, Token Management
+- **Protected Routes**: Role-based access control
+- **User Profiles**: User management and profile data
+- **Responsive Design**: Mobile-first approach
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Authentication Flow
 
-## Deploy on Vercel
+1. **Registration**: User creates account with email and password
+2. **Login**: User authenticates with credentials
+3. **Token Management**: JWT tokens stored securely
+4. **Protected Routes**: Middleware validates authentication
+5. **Logout**: Token invalidation and session cleanup
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Environment Variables
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Create `.env.local`:
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:3001
+NEXT_PUBLIC_APP_NAME=Athlee
+```
+
+## Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build production bundle
+- `npm start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run type-check` - Run TypeScript checks

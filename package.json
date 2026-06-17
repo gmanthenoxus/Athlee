@@ -3,7 +3,13 @@
   "version": "1.0.0",
   "description": "This document contains **all canonical prompts, rules, and templates** required to build Athlehub using AI in a controlled, testable, UI‑first, infra‑last manner.",
   "main": "index.js",
-  "private" : true,
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/mobile",
+    "apps/api",
+    "packages/*"
+  ],
   "directories": {
     "doc": "docs"
   },

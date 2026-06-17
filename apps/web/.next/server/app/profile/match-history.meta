@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/profile/layout,_N_T_/profile/match-history/layout,_N_T_/profile/match-history/page,_N_T_/profile/match-history"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/profile/match-history/__PAGE__",
+    "/profile/match-history",
+    "/profile",
+    "/_index",
+    "/_head"
+  ]
+}

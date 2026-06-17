@@ -5,8 +5,11 @@
 5. Team & player management
 6. Match setup (no stats yet)
 7. Stat engine (logic only)
+ Stats UI    
 8. Match logging UI
 9. XP / Badge engine (logic)
+ Leaderboard UI     
+  RuleEngine   
 10. Feed (read-only first)
 11. Social interactions
 12. Messaging

@@ -1,47 +1,42 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { Header } from "@/components/Header";
-import { Navigation } from "@/components/Navigation";
-import { MobileNav } from "@/components/MobileNav";
+/**
+ * Root Layout
+ * 
+ * Main layout component for the entire application.
+ * 
+ * Includes:
+ * - AuthProvider for global auth context
+ * - Global styles and fonts
+ * - Metadata for SEO
+ * 
+ * Code Reviewers:
+ * - AuthProvider wraps all children to ensure auth context available everywhere
+ * - This is the application entry point for all pages
+ */
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import type { Metadata } from 'next';
+import { AuthProvider } from '@/contexts/AuthContext';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "Athlehub - Professional Sports Management Platform",
-  description: "Track matches, stats, and connect with your sports community",
+  title: 'Athlee - Connect with Athletes & Sports Enthusiasts',
+  description: 'Match and meet sports professionals on Athlee. Find training partners, book venues, and build your sports network.',
 };
 
+/**
+ * RootLayout Component
+ */
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <div className="flex min-h-screen flex-col">
-          <Header />
-          <div className="hidden md:block border-b border-zinc-200 dark:border-zinc-800">
-            <div className="container mx-auto px-4">
-              <Navigation />
-            </div>
-          </div>
-          <main className="flex-1 pb-16 md:pb-0">
-            {children}
-          </main>
-          <MobileNav />
-        </div>
+      <body>
+        {/* AuthProvider makes auth context available to all components */}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

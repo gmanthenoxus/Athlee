@@ -1,0 +1,10 @@
+var R=require("../../chunks/ssr/[turbopack]_runtime.js")("server/app/_global-error/page.js")
+R.c("server/chunks/ssr/1a91a_29e36610._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0bec68b2._.js")
+R.c("server/chunks/ssr/1a91a_next_dist_862f9e40._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__3316581d._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__ccbcb1e1._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__759f941b._.js")
+R.c("server/chunks/ssr/Athlee_apps_web__next-internal_server_app__global-error_page_actions_361b63f9.js")
+R.m(72303)
+module.exports=R.m(72303).exports

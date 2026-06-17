@@ -1,0 +1,3 @@
+module.exports=[61895,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(25242);a.n(d("[project]/Athlee/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},98365,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(25242);a.n(d("[project]/Athlee/node_modules/next/dist/client/components/builtin/global-error.js"))},3600,a=>{"use strict";a.i(61895);var b=a.i(98365);a.n(b)}];
+
+//# sourceMappingURL=1a91a_next_dist_client_components_builtin_global-error_c40df0d3.js.map

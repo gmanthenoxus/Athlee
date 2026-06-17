@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/matches/layout,_N_T_/matches/create/layout,_N_T_/matches/create/page,_N_T_/matches/create"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/matches/create/__PAGE__",
+    "/matches/create",
+    "/matches",
+    "/_index",
+    "/_head"
+  ]
+}
